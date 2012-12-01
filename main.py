@@ -10,6 +10,14 @@ import textures
 
 SECTOR_SIZE = 16
 
+def SaveWorld(world, mode="w"):
+    print world
+    #f = open("world.py", mode) 
+    #try:
+        #f.write(world)
+    #finally:
+        #f.close()
+
 def cube_vertices(x, y, z, n):
     return [
         x-n,y+n,z-n, x-n,y+n,z+n, x+n,y+n,z+n, x+n,y+n,z-n, # top
@@ -116,7 +124,7 @@ class Model(object):
         return False
         
     def initialize(self):
-        n = 80
+        n = 70
         s = 1
         y = 0
         for x in xrange(-n, n + 1, s):
@@ -137,12 +145,12 @@ class Model(object):
         v = n - random.randint(-6,12)
         l = n - random.randint(-4,10)
         # Add some blocksets
-        for _ in xrange(60):
+        for _ in xrange(50):
             a = random.randint(-o, o)
             b = random.randint(-o, o)
             c = -1
             if randx(0,8) == 1:
-                h = random.randint(6, 25)
+                h = random.randint(4, 19)
                 s = random.randint(2, 18)
             else:
                 h = random.randint(1, 5)
@@ -195,23 +203,23 @@ class Model(object):
             if tree == BIRCH: leaf = BIRCH_LEAF
             elif tree == MAPLE: leaf = MAPLE_LEAF
             
-            zj = random.randint(round(-l/1.5), l)
-            xj = random.randint(-l, round(l/2))
+            zj = random.randint(-l, l+1)
+            xj = random.randint(-l, l+1)
             #xj = random.randint(2, 70)
             #zj = random.randint(2, 50)  
             block_is_under = self.is_mass((xj, -2, zj))
             block_in_way = self.is_mass((xj, 1, zj))
             if not block_in_way and block_is_under:
                 self.init_block((xj, -1, zj), tree)
-                self.init_block((xj, 0, zj), tree)
-                self.init_block((xj, 1, zj), tree)
-                self.init_block((xj, 2, zj), tree)
-                self.init_block((xj, 3, zj), tree)
-                self.init_block((xj, 4, zj), tree)
-                self.init_block((xj, 2, zj+1), leaf)
-                self.init_block((xj, 2, zj-1), leaf)
-                self.init_block((xj+1, 2, zj), leaf)
-                self.init_block((xj-1, 2, zj), leaf)
+                max_h = randx(3,6)
+                for h in xrange(0, max_h):
+                    self.init_block((xj, h, zj), tree)
+                    
+                if tree != BIRCH:
+                    self.init_block((xj, h, zj+1), leaf)
+                    self.init_block((xj, h, zj-1), leaf)
+                    self.init_block((xj+1, h, zj), leaf)
+                    self.init_block((xj-1, h, zj), leaf)
                 
                 for y in xrange(2):
                     for x in xrange(-2,3):
@@ -220,15 +228,32 @@ class Model(object):
                             elif z==2 and x==2: pass
                             elif z==2 and x==-2: pass
                             elif z==-2 and x==2: pass
-                            else:self.init_block((xj+x, 3+y, zj+z), leaf)
+                            else:self.init_block((xj+x, h+y+1, zj+z), leaf)
                 
-                self.init_block((xj, 5, zj+1), leaf)
-                self.init_block((xj, 5, zj-1), leaf)
-                self.init_block((xj+1, 5, zj), leaf)
-                self.init_block((xj-1, 5, zj), leaf)
-                self.init_block((xj, 6, zj), leaf)
+                if randx(1,6)==1:
+                    self.init_block((xj, h+3, zj+1), leaf)
+                    self.init_block((xj, h+3, zj-1), leaf)
+                    self.init_block((xj+1, h+3, zj), leaf)
+                    self.init_block((xj-1, h+3, zj), leaf)
+                    
+                    self.init_block((xj+1, h+3, zj-1), leaf)
+                    self.init_block((xj-1, h+3, zj+1), leaf)
+                    self.init_block((xj+1, h+3, zj+1), leaf)
+                    self.init_block((xj-1, h+3, zj-1), leaf)
+                    
+                    self.init_block((xj, h+4, zj+1), leaf)
+                    self.init_block((xj, h+4, zj-1), leaf)
+                    self.init_block((xj+1, h+4, zj), leaf)
+                    self.init_block((xj-1, h+4, zj), leaf)
+                    self.init_block((xj, h+5, zj), leaf)
+                else:
+                    self.init_block((xj, h+3, zj+1), leaf)
+                    self.init_block((xj, h+3, zj-1), leaf)
+                    self.init_block((xj+1, h+3, zj), leaf)
+                    self.init_block((xj-1, h+3, zj), leaf)
+                    self.init_block((xj, h+4, zj), leaf)
         
-    def hit_test(self, position, vector, max_distance=8):
+    def hit_test(self, position, vector, max_distance=6):
         m = 8
         x, y, z = position
         dx, dy, dz = vector
@@ -386,6 +411,7 @@ class Window(pyglet.window.Window):
         self.reticle = None
         self.dy = 0
         self.model = Model()
+        
         self.label = pyglet.text.Label('', font_name='Arial', font_size=18, 
             x=10, y=self.height - 10, anchor_x='left', anchor_y='top', 
             color=(0, 0, 0, 255))
@@ -442,7 +468,7 @@ class Window(pyglet.window.Window):
 
     def _update(self, dt):
         # walking
-        if self.flying: speed = 15
+        if self.flying: speed = 12
         else: speed = 5
                     
         d = dt * speed
@@ -454,7 +480,7 @@ class Window(pyglet.window.Window):
         
         # gravity
         if not self.flying:
-            self.dy -= dt / 4
+            self.dy -= dt / 5
             self.dy = max(self.dy, -0.5)
             dy += self.dy
             
@@ -468,7 +494,7 @@ class Window(pyglet.window.Window):
         current['block'] += value
         
         if current['block']>=len(blocks): current['block'] = 0
-        elif current['block']<=0: current['block'] = len(blocks)
+        elif current['block']<0: current['block'] = len(blocks)-1
      
     def current_block(self):
         return blocks[current['block']]
@@ -529,6 +555,14 @@ class Window(pyglet.window.Window):
             y = max(-90, min(90, y))
             self.rotation = (x, y)
             
+            '''
+            # I wish to be able to outline the object that is aimd at, if its in range.
+            vector = self.get_sight_vector()
+            block, cord = self.model.hit_test(self.position, vector)
+            if block:
+                pass
+            '''
+            
     def on_key_press(self, symbol, modifiers):
         if symbol == key.W:
             self.strafe[0] -= 1
@@ -541,11 +575,14 @@ class Window(pyglet.window.Window):
         elif symbol == key.SPACE:
             if self.jumping < 2:
                 self.jumping += 1
-                self.dy = 0.05
+                self.dy = 0.04
         elif symbol == key.ESCAPE:
             self.set_exclusive_mouse(False)
         elif symbol == key.TAB:
             self.flying = not self.flying
+            
+        elif symbol == key.L:
+            SaveWorld(self.model.world)
             
     def on_key_release(self, symbol, modifiers):
         if symbol == key.W:
@@ -568,6 +605,7 @@ class Window(pyglet.window.Window):
         self.reticle = pyglet.graphics.vertex_list(4,
             ('v2i', (x - n, y, x + n, y, x, y - n, x, y + n))
         )
+        
     def set_2d(self):
         width, height = self.get_size()
         glDisable(GL_DEPTH_TEST)
@@ -599,12 +637,14 @@ class Window(pyglet.window.Window):
         self.set_2d()
         self.draw_label()
         self.draw_reticle()
+    
     def draw_label(self):
         x, y, z = self.position
-        self.label.text = '%02d (%.2f, %.2f, %.2f) %d / %d' % (
+        self.label.text = 'FPS: %02d - POS(%.2f, %.2f, %.2f) %d / %d' % (
             pyglet.clock.get_fps(), x, y, z, 
             len(self.model._shown), len(self.model.world))
         self.label.draw()
+        
     def draw_reticle(self):
         glColor3d(0, 0, 0)
         self.reticle.draw(GL_LINES)
